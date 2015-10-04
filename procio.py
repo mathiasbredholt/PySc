@@ -30,7 +30,7 @@ def process_input(proc, queue, thread, wait=0, single=False):
         if single:
             return line
         else:
-            return line + process_input(proc, queue, thread, wait)
+            return line + process_input(proc, queue, thread, 0.1)
 
 
 def print_input(proc, queue, thread, wait=0, single=False):

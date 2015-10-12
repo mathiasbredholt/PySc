@@ -1,22 +1,22 @@
-from pyparsing import Literal, Keyword, Optional, Word, Combine, ZeroOrMore, OneOrMore, Forward, Group, Regex, alphas, nums, alphanums, oneOf, ParseException
+from pyparsing import Literal, Optional, Word, Combine, ZeroOrMore, OneOrMore, Forward, Group, Regex, alphas, nums, alphanums, oneOf, ParseException
 import sclib
 
 
 def run_single_cmd(t):
     try:
         sclib.lib[t[0]]()
-    except KeyError as err:
+    except KeyError:
         print('Command not recognized.')
 
 
 def run_group_cmd(t):
-    print(t)
+    # print(t)
     key = t[0][0]
     args = t[0][:]
     args.pop(0)
     try:
-        sclib.lib[key](*args)
-    except KeyError as err:
+        return sclib.lib[key](*args)
+    except KeyError:
         print('Command not recognized.')
 
 
@@ -38,21 +38,23 @@ def format_ugen(t):
     key = t[0][0]
     args = t[0][:]
     args.pop(0)
-    if sclib.lib[key]:
+    try:
         return sclib.lib[key](*args)
+    except KeyError:
+        print('UGen not recognized.')
 
 
 def ugen_syntax():
     lpar = Literal('[').suppress()
     rpar = Literal(']').suppress()
-    cmd = Word(alphas)
+    cmd = Word(alphanums)
     point = Literal('.')
     sign = Literal('-')
     number = Word(nums)
     integer = Combine(Optional(sign) + number).setParseAction(
-        lambda t: int(t[0]))
+        lambda t: sclib.Number(int(t[0])))
     floatnumber = Combine(integer + point + number).setParseAction(
-        lambda t: float(t[0]))
+        lambda t: sclib.Number(float(t[0])))
     expr = Forward()
     cmd_gp = Group(lpar + expr + rpar).setParseAction(format_ugen)
     atom = cmd_gp | floatnumber | integer | cmd
@@ -66,7 +68,7 @@ ugen_parser = ugen_syntax()
 
 def parse_cmd(string):
     try:
-        cmd_parser.parseString(string).asList()[0]
+        return cmd_parser.parseString(string).asList()[0]
     except ParseException as err:
         print(err)
 
@@ -74,13 +76,4 @@ def parse_cmd(string):
 def parse_ugen(string):
     return ugen_parser.parseString(string).asList()[0]
 
-    parse_cmd('add asdf [sinosc] freq=440 phase=4')
-# word_func = pp.Word(pp.alphas)
-# word_int = pp.Word(pp.nums)
-# word_float = pp.
-# word_list = pp.ZeroOrMore(word_func) + pp.Or([pp.ZeroOrMore(
-#     word_integer), pp.ZeroOrMore(word_float), pp.ZeroOrMore(word_func)])
-# parser_scl = pp.Group(word_list).setParseAction(format_ugen)
-# nested = pp.nestedExpr(content=parser_scl)
-# # nested.parseString('(saw 4 (saw))').asList()
-# parser_scl.parseString('saw 4 (saw)').asList()
+# print(parse_ugen('[sinosc]'))

@@ -5,6 +5,9 @@ import webbrowser
 # from sclib import *
 # from string import Template
 import parser
+import procio
+
+__sclang_running__ = False
 
 pytab = "{}:"
 sctab = "(),"
@@ -59,14 +62,14 @@ def run():
             sclang()
         elif prompt == '.':
             stop()
-        elif 'play' in prompt:
-            prompt = prompt[5:]
-            cmd('{' + parser.parse_ugen(prompt) + '.dup}.play')
-        elif 'add' in prompt:
-            prompt = prompt[5:]
-            addInstr()
+        # elif 'play' in prompt:
+        #     prompt = prompt[5:]
+        #     cmd('{' + parser.parse_ugen(prompt) + '.dup}.play')
+        # elif 'add' in prompt:
+        #     prompt = prompt[5:]
+        #     addInstr()
         elif prompt != '':
-            print('I don\'t understand')
+            cmd(parser.parse_cmd(prompt))
             # print(parse_cmd(prompt))
 
             # def parse_paren(string):
@@ -120,12 +123,31 @@ def run():
             #     return lib[keyword]['scl_str'].substitute(args)
 
 
-def cmd(str):
-    proc.stdin.write(str + "\n")
-    print(procio.process_input(proc, queue, thread, 0.5))
+def sclang():
+    global __sclang_running__
+    if not __sclang_running__:
+        sclangPath = "/Applications/SuperCollider/SuperCollider.app/Contents/MacOS/sclang"
+        print("Starting sclang...")
+        global proc
+        global queue
+        global thread
+        proc, queue, thread = procio.run(sclangPath)
+        __sclang_running__ = True
+        print(procio.process_input(proc, queue, thread, 10))
+        cmd("s.makeGui")
+    else:
+        proc.kill()
+        __sclang_running__ = False
+        sclang()
 
-# def kill():
-#     proc.kill()
+
+def cmd(string):
+    print(string)
+    # proc.stdin.write(string + "\n")
+    # procio.process_input(proc, queue, thread, 0.5)
+
+    # def kill():
+    #     proc.kill()
 
 
 def demo():
@@ -151,37 +173,35 @@ def output():
 def help(which):
     webbrowser.open("http://doc.sccode.org/Classes/{}.html".format(which))
 
-
 # Synths and nodes
-def play(name, **kwargs):
-    cmd("~{} = Synth({})".format(name.strip("\\"), name))
+# def play(name, **kwargs):
+# cmd("~{} = Synth({})".format(name.strip("\\"), name))
+#
+#
+# def stopNode(name):
+#     cmd("~{}.free".format(name.strip("\\")))
 
-
-def stopNode(name):
-    cmd("~{}.free".format(name.strip("\\")))
-
-
-def addInstr(ugen, out=0, **kwargs):
-    global SYNTH_INDEX
-    name = '\\pysc' + str(SYNTH_INDEX)
-    SYNTH_INDEX += 1
-    argument_list = ""
-    if kwargs:
-        argument_list += "arg "
-        for key, value in kwargs.items():
-            argument_list += "{}={},".format(key, value)
-        argument_list = argument_list[:-1] + ";"
-    cmd(r"SynthDef({},{{{} Out.ar({},{}.dup)}}).add;".format(
-        name, argument_list, out, ugen))
-    return name
-
-
-def pattern(name, params):
-    result = ""
-    for key, value in params.items():
-        result += "{}, {},".format(key, value)
-    cmd("Pdef(\\{},Pbind({})).play(quant:-1)".format(name, result[:-1]))
-
-
-def setTempo(tempo):
-    cmd("TempoClock.default.tempo = {}".format(tempo / 60))
+# def addInstr(ugen, out=0, **kwargs):
+#     global SYNTH_INDEX
+#     name = '\\pysc' + str(SYNTH_INDEX)
+#     SYNTH_INDEX += 1
+#     argument_list = ""
+#     if kwargs:
+#         argument_list += "arg "
+#         for key, value in kwargs.items():
+#             argument_list += "{}={},".format(key, value)
+#         argument_list = argument_list[:-1] + ";"
+#     cmd(r"SynthDef({},{{{} Out.ar({},{}.dup)}}).add;".format(
+#         name, argument_list, out, ugen))
+#     return name
+#
+#
+# def pattern(name, params):
+#     result = ""
+#     for key, value in params.items():
+#         result += "{}, {},".format(key, value)
+#     cmd("Pdef(\\{},Pbind({})).play(quant:-1)".format(name, result[:-1]))
+#
+#
+# def setTempo(tempo):
+#     cmd("TempoClock.default.tempo = {}".format(tempo / 60))
